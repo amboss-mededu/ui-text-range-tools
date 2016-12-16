@@ -1,4 +1,7 @@
-module.exports = {
-  find: require('./dist/find'),
-  applyFilter: require('./dist/apply-filter.js')
-};
+import find from './lib/find'
+import applyFilter from './lib/apply-filter'
+
+export {
+  find,
+  applyFilter
+}

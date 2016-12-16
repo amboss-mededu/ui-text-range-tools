@@ -10,7 +10,7 @@
     "sequelize": "node_modules/.bin/sequelize",
     "lint": "eslint lib",
     "clean": "rimraf dist",
-    "build:dist": "cd ./lib; babel *.js --out-dir ../dist",
+    "build:dist": "webpack --config ./webpack.js",
     "build": "npm run clean && npm run build:dist",
     "test": "cross-env NODE_ENV=test mocha-phantomjs ./test/index.html"
   },
@@ -19,6 +19,7 @@
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-core": "^6.20.0",
+    "babel-loader": "^6.2.10",
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-stage-0": "^6.16.0",
     "cross-env": "^3.1.3",
@@ -28,7 +29,8 @@
     "eslint-plugin-jsx-a11y": "^2.2.3",
     "eslint-plugin-react": "^6.8.0",
     "mocha": "^3.2.0",
-    "rimraf": "^2.5.4"
+    "rimraf": "^2.5.4",
+    "webpack": "^1.14.0"
   },
   "babel": {
     "presets": [
