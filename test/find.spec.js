@@ -2,8 +2,7 @@ chai.should();
 
 var expect = chai.expect;
 
-var find = textRangeTools.find,
-    scope = document.getElementById('find-spec');
+var find = textRangeTools.find;
 
 describe('find', function(){
 
