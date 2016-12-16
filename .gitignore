@@ -9,3 +9,4 @@ compiled
 .vscode
 *.iml
 .DS_Store
+test/test.js
