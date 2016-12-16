@@ -10,7 +10,7 @@
     "build:dist": "webpack --config ./webpack.js",
     "build": "npm run clean && npm run build:dist",
     "test": "cross-env NODE_ENV=test karma start --single-run",
-    "test:watch": "cross-env NODE_ENV=test karma start",
+    "test:watch": "cross-env NODE_ENV=test karma start"
   },
   "author": "Will Shown <wsn@miamed.de>",
   "license": "UNLICENSED",
