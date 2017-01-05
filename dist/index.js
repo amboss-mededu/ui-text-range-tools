@@ -207,7 +207,7 @@ module.exports =
 
 	  var timeEnd = performance.now();
 
-	  console.log('[Find]', 'performance', timeEnd - timeStart);
+	  console.log('[Find]', 'performance', timeEnd - timeStart, 'ms');
 
 	  return {
 	    starts: starts,
@@ -285,6 +285,19 @@ module.exports =
 
 	    for (var o = 0, i = 0; o <= l; o += 1) {
 
+	      // insert end tags unless we're at the beginning
+	      if (o > 0) {
+	        while (ends[ce] === t + o) {
+	          // add an end point here
+
+	          var tagEnd = '</' + tagName + '>';
+
+	          d = _insert(d, i, tagEnd);
+	          i += tagEnd.length;
+	          ce += 1;
+	        }
+	      }
+
 	      // insert start tags unless we're at the end
 	      if (o < l) {
 	        while (starts[cs] === t + o) {
@@ -292,25 +305,12 @@ module.exports =
 
 	          var tag = factory(data[cs]),
 	              tagAll = tag.outerHTML,
-	              tagEnd = tagAll.substr(tagAll.length - (3 + tag.tagName.length)),
-	              tagStart = tagAll.substr(0, tagAll.length - tagEnd.length);
+	              _tagEnd = tagAll.substr(tagAll.length - (3 + tag.tagName.length)),
+	              tagStart = tagAll.substr(0, tagAll.length - _tagEnd.length);
 
 	          d = _insert(d, i, tagStart);
 	          i += tagStart.length;
 	          cs += 1;
-	        }
-	      }
-
-	      // insert end tags unless we're at the beginning
-	      if (o > 0) {
-	        while (ends[ce] === t + o) {
-	          // add an end point here
-
-	          var _tagEnd = '</' + tagName + '>';
-
-	          d = _insert(d, i, _tagEnd);
-	          i += _tagEnd.length;
-	          ce += 1;
 	        }
 	      }
 
@@ -341,7 +341,7 @@ module.exports =
 
 	  var timeEnd = performance.now();
 
-	  console.log('[Apply filter]', 'performance', timeEnd - timeStart);
+	  console.log('[Apply filter]', 'performance', timeEnd - timeStart, 'ms');
 	};
 
 /***/ }
