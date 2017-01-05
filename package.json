@@ -43,5 +43,8 @@
   },
   "engines": {
     "node": "5.x"
+  },
+  "dependencies": {
+    "climb-es6": "gist:8fb3e403c4408979732f2ee058867c1a"
   }
 }

@@ -50,7 +50,7 @@ module.exports =
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
-	exports.applyFilter = exports.find = undefined;
+	exports.filterPointsFromPairs = exports.rangeFromPair = exports.rangeToPair = exports.applyFilter = exports.find = undefined;
 
 	var _find = __webpack_require__(1);
 
@@ -60,10 +60,15 @@ module.exports =
 
 	var _applyFilter2 = _interopRequireDefault(_applyFilter);
 
+	var _rangeTools = __webpack_require__(3);
+
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	exports.find = _find2.default;
 	exports.applyFilter = _applyFilter2.default;
+	exports.rangeToPair = _rangeTools.rangeToPair;
+	exports.rangeFromPair = _rangeTools.rangeFromPair;
+	exports.filterPointsFromPairs = _rangeTools.filterPointsFromPairs;
 
 /***/ },
 /* 1 */
@@ -343,6 +348,272 @@ module.exports =
 
 	  console.log('[Apply filter]', 'performance', timeEnd - timeStart, 'ms');
 	};
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.filterPointsFromPairs = exports.rangeFromPair = exports.rangeToPair = undefined;
+
+	var _climbEs = __webpack_require__(4);
+
+	var _climbEs2 = _interopRequireDefault(_climbEs);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
+	/**
+	 * Take a range and returns start and end positions in the text for that range.
+	 *
+	 * @param scope
+	 * @param range
+	 * @returns {*[]}
+	 */
+	var rangeToPair = function rangeToPair(scope, range) {
+
+	  if (!(range.commonAncestorContainer === scope || (0, _climbEs2.default)(range.commonAncestorContainer, function (el) {
+	    return el === scope;
+	  }, scope.parentNode))) {
+	    return null;
+	  }
+
+	  var startIsEl = range.startContainer.nodeType === Node.ELEMENT_NODE,
+	      endIsEl = range.endContainer.nodeType === Node.ELEMENT_NODE;
+
+	  var t = 0,
+	      n = void 0; // the cursor
+
+	  var walker = document.createTreeWalker( // the walker
+	  scope, NodeFilter.SHOW_TEXT + (startIsEl || endIsEl ? NodeFilter.SHOW_ELEMENT : 0), null, false);
+
+	  var start = void 0,
+	      end = void 0;
+
+	  while (n = walker.nextNode()) {
+
+	    if (n === range.startContainer) {
+	      start = t + range.startOffset;
+	    }
+
+	    if (n === range.endContainer) {
+	      end = t + range.endOffset;
+	      break;
+	    }
+
+	    t += n.nodeType === Node.TEXT_NODE ? n.data.length : 0;
+	  }
+
+	  return [start, end];
+	};
+
+	/**
+	 * Creates a new Range object from start and end coordinates within a scope element. Returns null if an appropriate
+	 * range cannot be created.
+	 *
+	 * @param scope
+	 * @param pair
+	 */
+	var rangeFromPair = function rangeFromPair(scope, pair) {
+
+	  var range = document.createRange();
+
+	  var startSet = false,
+	      endSet = false;
+
+	  var t = 0,
+	      n = void 0; // the cursor
+
+	  var walker = document.createTreeWalker( // the walker
+	  scope, NodeFilter.SHOW_TEXT, null, false);
+
+	  var start = pair[0],
+	      end = pair[1];
+
+	  var l = 0;
+
+	  while (n = walker.nextNode()) {
+
+	    l = n.data.length;
+
+	    if (!startSet && start >= t && start < t + l) {
+	      range.setStart(n, start - t);
+	      startSet = true;
+	    }
+
+	    if (!endSet && end >= t && end < t + l) {
+	      range.setEnd(n, end - t);
+	      endSet = true;
+	    }
+
+	    if (startSet && endSet) {
+	      break;
+	    }
+
+	    t += l;
+	  }
+
+	  return startSet && endSet ? range : null;
+	};
+
+	function _byOffset(a, b) {
+	  return a.offset - b.offset;
+	}
+
+	/**
+	 * Returns filter points suitable for applying a markup filter given a set of tuples.
+	 * Data is populated with a list of tuples indices
+	 *
+	 * @param {Element} scope
+	 * @param {Array} pairs
+	 * @returns {Object}
+	 */
+	var filterPointsFromPairs = function filterPointsFromPairs(scope, pairs) {
+
+	  var starts = [],
+	      ends = [],
+	      data = [];
+
+	  var t = 0,
+	      n = void 0; // the cursor
+
+	  var walker = document.createTreeWalker( // the walker
+	  scope, NodeFilter.SHOW_TEXT, null, false);
+
+	  var mapStarts = [],
+	      mapEnds = [];
+
+	  pairs.forEach(function (sae, s) {
+	    mapStarts.push({
+	      offset: sae[0],
+	      data: s
+	    });
+	    mapEnds.push({
+	      offset: sae[1],
+	      data: s
+	    });
+	  });
+
+	  mapStarts.sort(_byOffset);
+	  mapEnds.sort(_byOffset);
+
+	  var ms = 0,
+	      me = 0,
+	      l = 0;
+
+	  var inRanges = new Set();
+
+	  while (n = walker.nextNode()) {
+
+	    l = n.data.length;
+
+	    // first, start any ranges that begin at this point
+
+	    while (mapStarts[ms] && mapStarts[ms].offset === t) {
+	      inRanges.add(mapStarts[ms].data);
+	      ms += 1;
+	    }
+
+	    if (inRanges.size) {
+	      starts.push(t);
+	      data.push([].concat(_toConsumableArray(inRanges)));
+	    }
+
+	    var tt = Math.min(mapStarts[ms] ? mapStarts[ms].offset : Infinity, mapEnds[me] ? mapEnds[me].offset : Infinity);
+
+	    while (tt < t + l) {
+
+	      var added = void 0,
+	          removed = void 0;
+
+	      var startSize = inRanges.size;
+
+	      while (mapStarts[ms] && mapStarts[ms].offset === tt) {
+	        inRanges.add(mapStarts[ms].data);
+	        ms += 1;
+	        added = true;
+	      }
+
+	      while (mapEnds[me] && mapEnds[me].offset === tt) {
+	        inRanges.delete(mapEnds[me].data);
+	        me += 1;
+	        removed = true;
+	      }
+
+	      if (added || removed && inRanges.size > 0) {
+	        starts.push(tt);
+	        data.push([].concat(_toConsumableArray(inRanges)));
+	      }
+
+	      if (removed || added && startSize > 0) {
+	        ends.push(tt);
+	      }
+
+	      tt = Math.min(mapStarts[ms] ? mapStarts[ms].offset : Infinity, mapEnds[me] ? mapEnds[me].offset : Infinity);
+	    }
+
+	    if (inRanges.size) {
+	      ends.push(t + l);
+	    }
+
+	    t += l;
+	  }
+
+	  return {
+	    starts: starts,
+	    data: data,
+	    ends: ends
+	  };
+	};
+
+	exports.rangeToPair = rangeToPair;
+	exports.rangeFromPair = rangeFromPair;
+	exports.filterPointsFromPairs = filterPointsFromPairs;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	exports.default = function (start, predicate, limit) {
+
+	  if (!start) return null;
+
+	  var cursor = start,
+	      lim = limit || document.body;
+
+	  while (cursor !== lim) {
+	    if (cursor === document.body) break;
+	    if (predicate(cursor)) {
+	      return cursor;
+	    } else {
+	      cursor = cursor.parentNode;
+	    }
+	  }
+
+	  return null;
+	};
+
+	; /**
+	   * Climbs up the DOM up to but not including the limit element (or
+	   * `body` if not specified) looking for and returning the first
+	   * element that passes the predicate, or `null` if nothing does.
+	   *
+	   * @param {HTMLElement} start
+	   * @param {function} predicate
+	   * @param {HTMLElement} limit
+	   * @returns {*}
+	   */
 
 /***/ }
 /******/ ]);
