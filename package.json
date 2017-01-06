@@ -45,6 +45,6 @@
     "node": "5.x"
   },
   "dependencies": {
-    "climb-es6": "gist:8fb3e403c4408979732f2ee058867c1a"
+    "dom-tools": "git+ssh://will@192.237.168.17:6969/home/will/MIAMED/dom-tools.git"
   }
 }
