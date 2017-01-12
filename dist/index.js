@@ -256,10 +256,17 @@ module.exports =
 	 */
 	function _unwrap(el) {
 
-	  if (el.previousSibling && el.previousSibling.nodeType === Node.TEXT_NODE) {
+	  var prevT = el.previousSibling && el.previousSibling.nodeType === Node.TEXT_NODE,
+	      nextT = el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE;
+
+	  if (prevT && nextT) {
+	    el.previousSibling.data += el.textContent + nextT.data;
+	    el.parentNode.removeChild(el.nextSibling);
+	    el.parentNode.removeChild(el);
+	  } else if (prevT) {
 	    el.previousSibling.data += el.textContent;
 	    el.parentNode.removeChild(el);
-	  } else if (el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE) {
+	  } else if (nextT) {
 	    el.nextSibling.data = el.textContent + el.nextSibling.data;
 	    el.parentNode.removeChild(el);
 	  } else {
