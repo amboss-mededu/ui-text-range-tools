@@ -260,7 +260,7 @@ module.exports =
 	      nextT = el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE;
 
 	  if (prevT && nextT) {
-	    el.previousSibling.data += el.textContent + nextT.data;
+	    el.previousSibling.data += el.textContent + el.nextSibling.data;
 	    el.parentNode.removeChild(el.nextSibling);
 	    el.parentNode.removeChild(el);
 	  } else if (prevT) {
