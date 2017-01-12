@@ -231,6 +231,8 @@ module.exports =
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+	var forEach = Array.prototype.forEach;
+
 	/**
 	 * Returns the result of inserting string `b` into string `a` starting at position `i`
 	 *
@@ -240,8 +242,39 @@ module.exports =
 	 * @returns {String}
 	 * @private
 	 */
+
 	function _insert(a, i, b) {
 	  return a.substr(0, i) + b + a.substr(i);
+	}
+
+	/**
+	 * Removes this element and merges its text content with the adjacent text content,
+	 * or replaces itself with a TextNode if there is no adjacent text content.
+	 *
+	 * @param {Element} el
+	 * @private
+	 */
+	function _unwrap(el) {
+
+	  if (el.previousSibling && el.previousSibling.nodeType === Node.TEXT_NODE) {
+	    el.previousSibling.data += el.textContent;
+	    el.parentNode.removeChild(el);
+	  } else if (el.nextSibling && el.nextSibling.nodeType === Node.TEXT_NODE) {
+	    el.nextSibling.data = el.textContent + el.nextSibling.data;
+	    el.parentNode.removeChild(el);
+	  } else {
+	    el.parentNode.replaceChild(document.createTextNode(el.textContent), el);
+	  }
+	}
+
+	/**
+	 * Calls _unwrap on all created elements
+	 *
+	 * @param {Array} created - an array of HTML elements created during filter application
+	 * @private
+	 */
+	function _unwrapAll(created) {
+	  forEach.call(created, _unwrap);
 	}
 
 	/**
@@ -267,7 +300,8 @@ module.exports =
 
 	  var timeStart = performance.now();
 
-	  var p = document.createElement('i');
+	  var p = document.createElement('i'),
+	      created = [];
 
 	  var t = 0,
 	      // text cursor
@@ -326,16 +360,18 @@ module.exports =
 
 	    // commit changes after moving on
 
-	    // if(d !== n.data) debugger;
-
 	    p.innerHTML = d;
 
 	    var c = p.childNodes[p.childNodes.length - 1];
 
+	    if (c.nodeType === Node.ELEMENT_NODE) created.push(c);
+
 	    n.parentNode.replaceChild(c, n);
 
 	    for (var cc = p.childNodes.length - 1; cc >= 0; cc -= 1) {
-	      c = c.parentNode.insertBefore(p.childNodes[p.childNodes.length - 1], c);
+	      var ccc = p.childNodes[p.childNodes.length - 1];
+	      if (ccc.nodeType === Node.ELEMENT_NODE) created.push(ccc);
+	      c = c.parentNode.insertBefore(ccc, c);
 	    }
 
 	    // move on
@@ -347,6 +383,10 @@ module.exports =
 	  var timeEnd = performance.now();
 
 	  console.log('[Apply filter]', 'performance', timeEnd - timeStart, 'ms');
+
+	  return function () {
+	    _unwrapAll(created);
+	  };
 	};
 
 /***/ },
