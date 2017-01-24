@@ -305,8 +305,6 @@ module.exports =
 	      _factory = factory(null),
 	      tagName = _factory.tagName;
 
-	  var timeStart = performance.now();
-
 	  var p = document.createElement('i'),
 	      created = [];
 
@@ -386,10 +384,6 @@ module.exports =
 	    n = next;
 	    t += l;
 	  }
-
-	  var timeEnd = performance.now();
-
-	  console.log('[Apply filter]', 'performance', timeEnd - timeStart, 'ms');
 
 	  return function () {
 	    _unwrapAll(created);
