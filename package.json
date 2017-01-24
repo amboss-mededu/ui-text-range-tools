@@ -1,6 +1,6 @@
 {
   "name": "text-range-tools",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "A set of tools for working with text ranges",
   "repository": "ssh://git.medicuja.de/var/lib/git/text-range-tools.git",
   "main": "./dist/index.js",
