@@ -607,6 +607,17 @@ module.exports =
 	    t += l;
 	  }
 
+	  // remove zero-length points
+
+	  for (var i = 0; i < starts.length; i += 1) {
+	    if (ends[i] - starts[i] <= 0) {
+	      starts.splice(i, 1);
+	      data.splice(i, 1);
+	      ends.splice(i, 1);
+	      i -= 1;
+	    }
+	  }
+
 	  return {
 	    starts: starts,
 	    data: data,
