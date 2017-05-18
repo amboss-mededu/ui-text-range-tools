@@ -85,6 +85,8 @@ module.exports =
 	 *
 	 * @param {Element} scope
 	 * @param {String} query
+	 * @param {Object} options
+	 * @param {Array} options.exclude - Collection of tags or selector to skip
 	 * @returns {Object} start, end, and data points suitable for a filter, also `results`, the number of hits found
 	 */
 
@@ -92,11 +94,31 @@ module.exports =
 	    reduce = _Array$prototype.reduce,
 	    splice = _Array$prototype.splice;
 
-	// memory optimization: cache
+	/**
+	 * Factory for node filters.
+	 * allows injection of additional custom filters
+	 * that the walker should consider when building the tree
+	 * @param  {Function} filterMiddlware - Filter function. Should return a boolean
+	 * @return {NodeFilter} Used by TreeWalker to either accept or reject a given from the tree
+	 */
 
+	var createNodeFilter = function createNodeFilter(filterMiddlware) {
+	  return function (node) {
+	    // Accept current node if no middleware is defined
+	    if (!filterMiddlware) return NodeFilter.FILTER_ACCEPT;
+
+	    // ..if node passes/fails the filter,
+	    // return NodeFilter response
+	    return filterMiddlware(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+	  };
+	};
+
+	// memory optimization: cache
 	var EXEC_RESULT = void 0;
 
 	exports.default = function (scope, q) {
+	  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
 
 	  var timeStart = performance.now();
 
@@ -137,7 +159,15 @@ module.exports =
 
 	  var walker = document.createTreeWalker( // the walker
 	  scope, NodeFilter.SHOW_TEXT, // only operate on text nodes
-	  null, false);
+	  {
+	    /**
+	     * Returns an unsigned short that will be used to tell
+	     * if a given Node must be accepted or not by the NodeIterator
+	     * or TreeWalker iteration algorithm.
+	     * see: https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter
+	     */
+	    acceptNode: createNodeFilter(options.filter)
+	  }, false);
 
 	  while (n = walker.nextNode()) {
 
@@ -683,17 +713,22 @@ module.exports =
 		Object.defineProperty(exports, "__esModule", {
 			value: true
 		});
-		exports.climb = undefined;
+		exports.bboxDiff = exports.climb = undefined;
 
 		var _climb = __webpack_require__(1);
 
 		var _climb2 = _interopRequireDefault(_climb);
+
+		var _bboxDiff = __webpack_require__(2);
+
+		var _bboxDiff2 = _interopRequireDefault(_bboxDiff);
 
 		function _interopRequireDefault(obj) {
 			return obj && obj.__esModule ? obj : { default: obj };
 		}
 
 		exports.climb = _climb2.default;
+		exports.bboxDiff = _bboxDiff2.default;
 
 		/***/
 	},
@@ -710,12 +745,14 @@ module.exports =
 
 			if (!start) return null;
 
-			var cursor = start,
-			    lim = limit || document.body;
+			var cursor = start;
+
+			var lim = limit || document.body;
 
 			while (cursor !== lim) {
-				if (cursor === document.body) break;
-				if (predicate(cursor)) {
+				if (cursor === document.body) {
+					break;
+				} else if (predicate(cursor)) {
 					return cursor;
 				} else {
 					cursor = cursor.parentNode;
@@ -725,16 +762,50 @@ module.exports =
 			return null;
 		};
 
-		; /**
-	    * Climbs up the DOM up to but not including the limit element (or
-	    * `body` if not specified) looking for and returning the first
-	    * element that passes the predicate, or `null` if nothing does.
-	    *
-	    * @param {HTMLElement} start
-	    * @param {function} predicate
-	    * @param {HTMLElement} limit
-	    * @returns {*}
-	    */
+		/***/
+	},
+	/* 2 */
+	/***/function (module, exports) {
+
+		'use strict';
+
+		Object.defineProperty(exports, "__esModule", {
+			value: true
+		});
+
+		exports.default = function (a, b, keys) {
+
+			// do the hard math here
+			var aBox = a.getBoundingClientRect();
+
+			var result = { visible: true };
+
+			var ks = keys && keys.length ? keys : boxKeys;
+
+			// if this has a null BBox, it's not even visible
+			if (aBox.height === 0 && aBox.width === 0) result.visible = false;
+
+			var bBox = b.nodeType ? b.getBoundingClientRect() : b;
+
+			ks.forEach(function (k) {
+				result[k] = aBox[k] - bBox[k];
+			});
+
+			return result;
+		};
+
+		/**
+	  * Returns the relative offsets up to the limit node
+	  *
+	  * @param {Element} a – the target, whose visibility is also checked
+	  * @param {Element}|{Object} b – the referent, which can also be an existing bbox.
+	  * @param {Array} [keys] - a set of box keys to query instead of the full set.
+	  * @returns {Object} diffBox
+	  */
+
+		var boxKeys = ['bottom', 'height', 'left', 'right', 'top', 'width'];
+
+		;
 
 		/***/
 	}
