@@ -114,7 +114,7 @@ describe('filter', function() {
 
   });
 
-  it('should support additional filter option', function() {
+  it('should execute the node-filter option', function() {
     var called = false;
 
     var filterNode = function(node) {
