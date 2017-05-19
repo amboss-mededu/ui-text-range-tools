@@ -56,11 +56,11 @@ module.exports =
 
 	var _find2 = _interopRequireDefault(_find);
 
-	var _applyFilter = __webpack_require__(2);
+	var _applyFilter = __webpack_require__(3);
 
 	var _applyFilter2 = _interopRequireDefault(_applyFilter);
 
-	var _rangeTools = __webpack_require__(3);
+	var _rangeTools = __webpack_require__(4);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -72,13 +72,20 @@ module.exports =
 
 /***/ },
 /* 1 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _nodeFilter = __webpack_require__(2);
+
+	var _nodeFilter2 = _interopRequireDefault(_nodeFilter);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	/**
 	 * Searches in the text content of a scope node for matches.
 	 * Returns start, end, and data points for building a filter for find results, as well as analytics about the search.
@@ -86,7 +93,7 @@ module.exports =
 	 * @param {Element} scope
 	 * @param {String} query
 	 * @param {Object} options
-	 * @param {Array} options.exclude - Collection of tags or selector to skip
+	 * @param {Function} options.filter - Predicate to filter TreeWalker nodes
 	 * @returns {Object} start, end, and data points suitable for a filter, also `results`, the number of hits found
 	 */
 
@@ -94,26 +101,8 @@ module.exports =
 	    reduce = _Array$prototype.reduce,
 	    splice = _Array$prototype.splice;
 
-	/**
-	 * Factory for node filters.
-	 * allows injection of additional custom filters
-	 * that the walker should consider when building the tree
-	 * @param  {Function} filterMiddlware - Filter function. Should return a boolean
-	 * @return {NodeFilter} Used by TreeWalker to either accept or reject a given from the tree
-	 */
-
-	var createNodeFilter = function createNodeFilter(filterMiddlware) {
-	  return function (node) {
-	    // Accept current node if no middleware is defined
-	    if (!filterMiddlware) return NodeFilter.FILTER_ACCEPT;
-
-	    // ..if node passes/fails the filter,
-	    // return NodeFilter response
-	    return filterMiddlware(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
-	  };
-	};
-
 	// memory optimization: cache
+
 	var EXEC_RESULT = void 0;
 
 	exports.default = function (scope, q) {
@@ -166,7 +155,7 @@ module.exports =
 	     * or TreeWalker iteration algorithm.
 	     * see: https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter
 	     */
-	    acceptNode: createNodeFilter(options.filter)
+	    acceptNode: (0, _nodeFilter2.default)(options.filter)
 	  }, false);
 
 	  while (n = walker.nextNode()) {
@@ -256,11 +245,46 @@ module.exports =
 /* 2 */
 /***/ function(module, exports) {
 
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	/**
+	 * Factory for node filters.
+	 * allows injection of additional custom filters
+	 * that the walker should consider when building the tree
+	 * @param  {Function} filterMiddlware - Filter function. Should return a boolean
+	 * @return {NodeFilter} Used by TreeWalker to either accept or reject a given from the tree
+	 */
+	exports.default = function (filterMiddlware) {
+	  return function (node) {
+	    // Accept current node if no middleware is defined
+	    if (!filterMiddlware) return NodeFilter.FILTER_ACCEPT;
+
+	    // ..if node passes/fails the filter,
+	    // return NodeFilter response
+	    return filterMiddlware(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+	  };
+	};
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _nodeFilter = __webpack_require__(2);
+
+	var _nodeFilter2 = _interopRequireDefault(_nodeFilter);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	var forEach = Array.prototype.forEach;
 
 	/**
@@ -326,9 +350,13 @@ module.exports =
 	 * @param {Array} points.starts - sorted array of points at which to insert start tags
 	 * @param {Array} points.data - array of data to give the factory; must be the same length as startPoints
 	 * @param {Array} points.ends - sorted array of points at which to insert end tags; must be the same length as startPoints
+	 * @param {Object} options
+	 * @param {Function} options.filter - Predicate to filter TreeWalker nodes
 	 */
 
 	exports.default = function (scope, factory, points) {
+	  var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
 	  var starts = points.starts,
 	      ends = points.ends,
 	      data = points.data,
@@ -346,7 +374,15 @@ module.exports =
 
 	  var walker = document.createTreeWalker( // the walker
 	  scope, NodeFilter.SHOW_TEXT, // only operate on text nodes
-	  null, false);
+	  {
+	    /**
+	     * Returns an unsigned short that will be used to tell
+	     * if a given Node must be accepted or not by the NodeIterator
+	     * or TreeWalker iteration algorithm.
+	     * see: https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter
+	     */
+	    acceptNode: (0, _nodeFilter2.default)(options.filter)
+	  }, false);
 
 	  var n = walker.nextNode(); // node cursor
 
@@ -421,7 +457,7 @@ module.exports =
 	};
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -431,7 +467,7 @@ module.exports =
 	});
 	exports.filterPointsFromPairs = exports.rangeFromPair = exports.rangeToPair = undefined;
 
-	var _domTools = __webpack_require__(4);
+	var _domTools = __webpack_require__(5);
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -654,7 +690,7 @@ module.exports =
 	exports.filterPointsFromPairs = filterPointsFromPairs;
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports) {
 
 	"use strict";
