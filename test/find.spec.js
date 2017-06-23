@@ -1,3 +1,43 @@
+// Helpers
+// -------
+
+/**
+ * Element.matches polyfill
+ */
+var matches = function(node, s) {
+  var matches = (node.document || node.ownerDocument).querySelectorAll(s),
+      i = matches.length;
+  while (--i >= 0 && matches.item(i) !== node) {}
+  return i > -1;
+};
+
+
+/**
+ * DOM tree climber for a selector
+ */
+var getParents = function (elem, selector) {
+  // Setup parents array
+  var parents = [];
+
+  // Get matching parent elements
+  for (; elem && elem !== document; elem = elem.parentNode) {
+
+    // Add matching parents to array
+    if (selector) {
+      if (matches(elem, selector)) {
+        parents.push(elem);
+      }
+    } else {
+      parents.push(elem);
+    }
+  }
+
+  return parents;
+};
+
+// Specs
+// -----
+
 chai.should();
 
 var expect = chai.expect;
@@ -49,4 +89,51 @@ describe('find', function(){
 
   });
 
+
+  it('should support additional filter option', function() {
+    var called = false;
+
+    var filterNode = function(node) {
+      called = true;
+    };
+
+    find(scope, 'old IT', { filter: filterNode });
+
+    expect(called).to.equal(true);
+  });
+
+  it('should accept nodes matching the filter', function() {
+    var contents = document.createElement('div');
+
+    document.body.innerHTML = '';
+
+    contents.innerHTML = '<article>' +
+      '<div><p>A gay musical, called Gay. That’s quite gay. </p></div>' +
+      '<section><p>Gay musical? Aren’t all musicals gay?</p></section>' +
+    '</article>';
+
+    document.body.appendChild(contents);
+
+
+    var called = false;
+    var withinSection;
+
+    var filterNode = (node) => {
+      called = true;
+      withinSection = getParents(node, 'section');
+
+      expect(node).to.have.property('nodeType');
+      expect(node.nodeType).to.equal(node.TEXT_NODE);
+
+      return Boolean(withinSection.length);
+    };
+
+    var r = find(contents, 'musical', { filter: filterNode });
+
+    expect(called).to.equal(true);
+    expect(r.starts.length).to.equal(2);
+    expect(r.ends.length).to.equal(2);
+    expect(r.data.length).to.equal(2);
+    expect(r.results).to.equal(2);
+  });
 });

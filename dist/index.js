@@ -56,11 +56,11 @@ module.exports =
 
 	var _find2 = _interopRequireDefault(_find);
 
-	var _applyFilter = __webpack_require__(2);
+	var _applyFilter = __webpack_require__(3);
 
 	var _applyFilter2 = _interopRequireDefault(_applyFilter);
 
-	var _rangeTools = __webpack_require__(3);
+	var _rangeTools = __webpack_require__(4);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -72,19 +72,28 @@ module.exports =
 
 /***/ },
 /* 1 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _nodeFilter = __webpack_require__(2);
+
+	var _nodeFilter2 = _interopRequireDefault(_nodeFilter);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	/**
 	 * Searches in the text content of a scope node for matches.
 	 * Returns start, end, and data points for building a filter for find results, as well as analytics about the search.
 	 *
 	 * @param {Element} scope
 	 * @param {String} query
+	 * @param {Object} options
+	 * @param {Function} options.filter - Predicate to filter TreeWalker nodes
 	 * @returns {Object} start, end, and data points suitable for a filter, also `results`, the number of hits found
 	 */
 
@@ -97,6 +106,8 @@ module.exports =
 	var EXEC_RESULT = void 0;
 
 	exports.default = function (scope, q) {
+	  var options = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+
 
 	  var timeStart = performance.now();
 
@@ -137,7 +148,15 @@ module.exports =
 
 	  var walker = document.createTreeWalker( // the walker
 	  scope, NodeFilter.SHOW_TEXT, // only operate on text nodes
-	  null, false);
+	  {
+	    /**
+	     * Returns an unsigned short that will be used to tell
+	     * if a given Node must be accepted or not by the NodeIterator
+	     * or TreeWalker iteration algorithm.
+	     * see: https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter
+	     */
+	    acceptNode: (0, _nodeFilter2.default)(options.filter)
+	  }, false);
 
 	  while (n = walker.nextNode()) {
 
@@ -226,11 +245,46 @@ module.exports =
 /* 2 */
 /***/ function(module, exports) {
 
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+
+	/**
+	 * Factory for node filters.
+	 * allows injection of additional custom filters
+	 * that the walker should consider when building the tree
+	 * @param  {Function} filterMiddlware - Filter function. Should return a boolean
+	 * @return {NodeFilter} Used by TreeWalker to either accept or reject a given from the tree
+	 */
+	exports.default = function (filterMiddlware) {
+	  return function (node) {
+	    // Accept current node if no middleware is defined
+	    if (!filterMiddlware) return NodeFilter.FILTER_ACCEPT;
+
+	    // ..if node passes/fails the filter,
+	    // return NodeFilter response
+	    return filterMiddlware(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+	  };
+	};
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
 	'use strict';
 
 	Object.defineProperty(exports, "__esModule", {
 	  value: true
 	});
+
+	var _nodeFilter = __webpack_require__(2);
+
+	var _nodeFilter2 = _interopRequireDefault(_nodeFilter);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 	var forEach = Array.prototype.forEach;
 
 	/**
@@ -296,9 +350,13 @@ module.exports =
 	 * @param {Array} points.starts - sorted array of points at which to insert start tags
 	 * @param {Array} points.data - array of data to give the factory; must be the same length as startPoints
 	 * @param {Array} points.ends - sorted array of points at which to insert end tags; must be the same length as startPoints
+	 * @param {Object} options
+	 * @param {Function} options.filter - Predicate to filter TreeWalker nodes
 	 */
 
 	exports.default = function (scope, factory, points) {
+	  var options = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : {};
+
 	  var starts = points.starts,
 	      ends = points.ends,
 	      data = points.data,
@@ -316,7 +374,15 @@ module.exports =
 
 	  var walker = document.createTreeWalker( // the walker
 	  scope, NodeFilter.SHOW_TEXT, // only operate on text nodes
-	  null, false);
+	  {
+	    /**
+	     * Returns an unsigned short that will be used to tell
+	     * if a given Node must be accepted or not by the NodeIterator
+	     * or TreeWalker iteration algorithm.
+	     * see: https://developer.mozilla.org/en-US/docs/Web/API/NodeFilter
+	     */
+	    acceptNode: (0, _nodeFilter2.default)(options.filter)
+	  }, false);
 
 	  var n = walker.nextNode(); // node cursor
 
@@ -391,7 +457,7 @@ module.exports =
 	};
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -401,7 +467,7 @@ module.exports =
 	});
 	exports.filterPointsFromPairs = exports.rangeFromPair = exports.rangeToPair = undefined;
 
-	var _domTools = __webpack_require__(4);
+	var _domTools = __webpack_require__(5);
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
@@ -624,7 +690,7 @@ module.exports =
 	exports.filterPointsFromPairs = filterPointsFromPairs;
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -683,17 +749,22 @@ module.exports =
 		Object.defineProperty(exports, "__esModule", {
 			value: true
 		});
-		exports.climb = undefined;
+		exports.bboxDiff = exports.climb = undefined;
 
 		var _climb = __webpack_require__(1);
 
 		var _climb2 = _interopRequireDefault(_climb);
+
+		var _bboxDiff = __webpack_require__(2);
+
+		var _bboxDiff2 = _interopRequireDefault(_bboxDiff);
 
 		function _interopRequireDefault(obj) {
 			return obj && obj.__esModule ? obj : { default: obj };
 		}
 
 		exports.climb = _climb2.default;
+		exports.bboxDiff = _bboxDiff2.default;
 
 		/***/
 	},
@@ -710,12 +781,14 @@ module.exports =
 
 			if (!start) return null;
 
-			var cursor = start,
-			    lim = limit || document.body;
+			var cursor = start;
+
+			var lim = limit || document.body;
 
 			while (cursor !== lim) {
-				if (cursor === document.body) break;
-				if (predicate(cursor)) {
+				if (cursor === document.body) {
+					break;
+				} else if (predicate(cursor)) {
 					return cursor;
 				} else {
 					cursor = cursor.parentNode;
@@ -725,16 +798,50 @@ module.exports =
 			return null;
 		};
 
-		; /**
-	    * Climbs up the DOM up to but not including the limit element (or
-	    * `body` if not specified) looking for and returning the first
-	    * element that passes the predicate, or `null` if nothing does.
-	    *
-	    * @param {HTMLElement} start
-	    * @param {function} predicate
-	    * @param {HTMLElement} limit
-	    * @returns {*}
-	    */
+		/***/
+	},
+	/* 2 */
+	/***/function (module, exports) {
+
+		'use strict';
+
+		Object.defineProperty(exports, "__esModule", {
+			value: true
+		});
+
+		exports.default = function (a, b, keys) {
+
+			// do the hard math here
+			var aBox = a.getBoundingClientRect();
+
+			var result = { visible: true };
+
+			var ks = keys && keys.length ? keys : boxKeys;
+
+			// if this has a null BBox, it's not even visible
+			if (aBox.height === 0 && aBox.width === 0) result.visible = false;
+
+			var bBox = b.nodeType ? b.getBoundingClientRect() : b;
+
+			ks.forEach(function (k) {
+				result[k] = aBox[k] - bBox[k];
+			});
+
+			return result;
+		};
+
+		/**
+	  * Returns the relative offsets up to the limit node
+	  *
+	  * @param {Element} a – the target, whose visibility is also checked
+	  * @param {Element}|{Object} b – the referent, which can also be an existing bbox.
+	  * @param {Array} [keys] - a set of box keys to query instead of the full set.
+	  * @returns {Object} diffBox
+	  */
+
+		var boxKeys = ['bottom', 'height', 'left', 'right', 'top', 'width'];
+
+		;
 
 		/***/
 	}
