@@ -42,7 +42,7 @@
     ]
   },
   "engines": {
-    "node": "5.x"
+    "node": ">=5.x"
   },
   "dependencies": {
     "dom-tools": "amboss-mededu/ui-dom-tools.git#v0.1.1"
